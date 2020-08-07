@@ -1,0 +1,25 @@
+{
+  "name": "41-eridani",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "adm-zip": "^0.4.13",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.18.3",
+    "core-js": "^2.5.4",
+    "express": "^4.16.3",
+    "jsonwebtoken": "^8.2.1",
+    "mongoose": "^5.1.2",
+    "mongoose-unique-validator": "^2.0.1",
+    "multer": "^1.4.0",
+    "nodemon": "^2.0.4"
+  },
+  "scripts": {
+    "start": "nodemon server.js"
+  },
+  "description": "Node.js Backend for 40-eridani",
+  "main": "app.js",
+  "devDependencies": {},
+  "author": "The Architect",
+  "license": "ISC"
+}
