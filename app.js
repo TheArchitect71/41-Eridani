@@ -5,6 +5,13 @@ const mongoose = require("mongoose");
 
 const app = express();
 
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use("/images", express.static(path.join("images")));
+
+const postsRoutes = require("./routes/posts");
+const userRoutes = require("./routes/user");
+
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
@@ -17,8 +24,6 @@ app.use((req, res, next) => {
   );
   next();
 });
-const postsRoutes = require("./routes/posts");
-const userRoutes = require("./routes/user");
 
 mongoose
   .connect(
@@ -32,11 +37,7 @@ mongoose
     console.log("Connection failed!");
   });
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use("/images", express.static(path.join("images")));
-
-app.use("/api/posts", postsRoutes);
-app.use("/api/user", userRoutes);
+app.use("/posts", postsRoutes);
+app.use("/user", userRoutes);
 
 module.exports = app;
