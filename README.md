@@ -1,24 +1,40 @@
-# 41-Eridani offline backend
+# 41-Eridani — posts API
 
-Express backend for 40-Eridani, upgraded with the existing API preserved.
+The Express/MongoDB backend for [40-Eridani](https://github.com/TheArchitect71/40-Eridani), an image-post publishing app. It stores user accounts and posts, authenticates requests with JWTs, and saves uploaded images locally. This repository is API-only; use 40-Eridani for the frontend.
 
-## Local setup
+## API
 
-Use Node 26.10.0 (`.nvmrc`) and MongoDB Community 9.0.2. Run `npm ci` and `npm run setup:local`; the setup creates an ignored private `.env.local` with a random JWT key and preserves an existing file.
+- `POST /user/signup` and `POST /user/login`: registration and authentication.
+- `GET /posts`: paginated posts.
+- `POST /posts`, `PUT /posts/:id`, and `DELETE /posts/:id`: authenticated post management with image uploads.
 
-In a foreground terminal:
+## Run locally
+
+Prerequisites: the Node version in `.nvmrc` (currently 26.10.0), npm, and MongoDB Community 9.0.2. From the repository root:
+
+```sh
+npm ci
+npm run setup:local
+```
+
+Start MongoDB in a foreground terminal:
 
 ```sh
 mkdir -p .local/mongodb
 mongod --dbpath .local/mongodb --bind_ip 127.0.0.1 --port 27018 --replSet offline-rs
 ```
 
-In a second terminal run `npm run db:init` and `npm start`. Skip the MongoDB launch if the matching local `offline-rs` already runs on 27018. The initializer creates no application records. Stop foreground processes with Ctrl+C. No Atlas account or network is required after installation. Uploaded files remain local in `images/`.
+If that local replica set already runs on port 27018, reuse it rather than starting a second instance. In another terminal at the repository root:
 
-The API remains `/user/signup`, `/user/login`, and `/posts` (GET/POST/PUT/DELETE), including authenticated image uploads and pagination. Uploaded files remain local in `images/`.
+```sh
+npm run db:init
+npm start
+```
 
-## Validation
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000). Keep both processes in the foreground and stop them with **Ctrl+C**. Setup creates a private, ignored `.env.local` without overwriting an existing file. Database initialization creates no application records. These defaults use local MongoDB; no Atlas account is required.
 
-`npm test` exercises a real offline MongoDB database and an ephemeral HTTP server: signup, valid and missing-user login, image upload, pagination, edit, unauthorized deletion, authorized deletion, and 404 after deletion. It deletes only its isolated process-specific test database. Current dependency versions are pinned in package.json and package-lock.json.
+Uploaded files are stored in `images/`. A fresh database starts empty; create an account and posts through the frontend.
 
-Official package metadata: https://registry.npmjs.org/express/latest, https://registry.npmjs.org/mongoose/latest, https://registry.npmjs.org/mongoose-unique-validator/latest. MongoDB release: https://www.mongodb.com/docs/manual/release-notes/9.0/. Node release manifest: https://nodejs.org/dist/index.json.
+## Development
+
+`npm run dev` starts watch mode. `npm test` runs integration tests against a separate local database and removes that test database afterwards. MongoDB must be running.
