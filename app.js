@@ -1,12 +1,10 @@
 const path = require("path");
 const express = require("express");
-const bodyParser = require("body-parser");
-const mongoose = require("mongoose");
 
 const app = express();
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.use("/images", express.static(path.join("images")));
 
 const postsRoutes = require("./routes/posts");
@@ -25,17 +23,6 @@ app.use((req, res, next) => {
   next();
 });
 
-mongoose
-  .connect(
-    `mongodb+srv://theArchitect71:${process.env.MONGO_ATLAS_PW}@cluster0-jsigs.mongodb.net/40-EridaniDatabase?retryWrites=true&w=majority`,
-    { useNewUrlParser: true, useUnifiedTopology: true }
-  )
-  .then(() => {
-    console.log("Connected to database!");
-  })
-  .catch(() => {
-    console.log("Connection failed!");
-  });
 
 app.use("/posts", postsRoutes);
 app.use("/user", userRoutes);

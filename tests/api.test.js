@@ -1,0 +1,43 @@
+const { test, before, after } = require('node:test');
+const assert = require('node:assert/strict');
+const mongoose = require('mongoose');
+process.env.JWT_KEY = 'isolated-offline-migration-test-key';
+const app = require('../app');
+const User = require('../models/user');
+let server, base;
+before(async () => {
+  await mongoose.connect(`mongodb://127.0.0.1:27018/eridani41_migration_test_${process.pid}?replicaSet=offline-rs`);
+  await User.init();
+  server = app.listen(0, '127.0.0.1');
+  await new Promise(resolve => server.once('listening', resolve));
+  base = `http://127.0.0.1:${server.address().port}`;
+});
+after(async () => {
+  if (server) await new Promise(resolve => server.close(resolve));
+  if (mongoose.connection.readyState === 1) await mongoose.connection.dropDatabase();
+  await mongoose.disconnect();
+});
+const json = (method, body, token) => ({ method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) });
+test('offline signup, login, upload, pagination, edit and delete preserve the API', async () => {
+  const credentials = { email: 'migration@example.test', password: 'local-test-password' };
+  let response = await fetch(`${base}/user/signup`, json('POST', credentials));
+  assert.equal(response.status, 201);
+  response = await fetch(`${base}/user/login`, json('POST', { ...credentials, email: 'missing@example.test' }));
+  assert.equal(response.status, 401);
+  response = await fetch(`${base}/user/login`, json('POST', credentials));
+  assert.equal(response.status, 200);
+  const { token } = await response.json();
+  const form = new FormData(); form.set('title', 'Offline post'); form.set('content', 'Stored locally');
+  form.set('image', new Blob([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aZAAAAABJRU5ErkJggg==', 'base64')], { type: 'image/png' }), 'test.png');
+  response = await fetch(`${base}/posts`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
+  assert.equal(response.status, 201);
+  const { post } = await response.json(); assert.equal(post.title, 'Offline post'); assert.ok(post.id);
+  response = await fetch(`${base}/posts?pagesize=1&page=1`); const list = await response.json();
+  assert.equal(list.maxPosts, 1); assert.equal(list.posts.length, 1);
+  response = await fetch(`${base}/posts/${post.id}`, json('PUT', { id: post.id, title: 'Edited offline', content: 'Updated', imagePath: post.imagePath }, token));
+  assert.equal(response.status, 200);
+  response = await fetch(`${base}/posts/${post.id}`); assert.equal((await response.json()).title, 'Edited offline');
+  response = await fetch(`${base}/posts/${post.id}`, { method: 'DELETE' }); assert.equal(response.status, 401);
+  response = await fetch(`${base}/posts/${post.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }); assert.equal(response.status, 200);
+  response = await fetch(`${base}/posts/${post.id}`); assert.equal(response.status, 404);
+});
