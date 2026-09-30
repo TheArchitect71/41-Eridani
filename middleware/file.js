@@ -1,3 +1,7 @@
+const fs = require("node:fs");
+const path = require("node:path");
+const imageDirectory = path.join(__dirname, "..", "images");
+fs.mkdirSync(imageDirectory, { recursive: true });
 const multer = require("multer");
 
 const MIME_TYPE_MAP = {
@@ -13,7 +17,7 @@ const storage = multer.diskStorage({
     if (isValid) {
       error = null;
     }
-    cb(error, "images");
+    cb(error, imageDirectory);
   },
   filename: (req, file, cb) => {
     const name = file.originalname
